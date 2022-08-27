@@ -1,7 +1,7 @@
 {
-  "name": "@jupyterlab-examples/toolbar-button",
-  "version": "0.1.0",
-  "description": "A JupyterLab extension for clearing all cells output at once.",
+  "name": "@jupyterspot/jupyterspot",
+  "version": "0.0.1",
+  "description": "Open notebook as a whiteboard on JupyterSpot.",
   "keywords": [
     "jupyter",
     "jupyterlab",
@@ -13,8 +13,8 @@
   },
   "license": "BSD-3-Clause",
   "author": {
-    "name": "Yash Singhal",
-    "email": "ramusinghal112@gmail.com"
+    "name": "Jimmie Goode",
+    "email": "jgoode@jupyterspot.com"
   },
   "files": [
     "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
@@ -51,7 +51,8 @@
     "@jupyterlab/apputils": "^3.1.0",
     "@jupyterlab/docregistry": "^3.1.0",
     "@jupyterlab/notebook": "^3.1.0",
-    "@lumino/disposable": "^1.4.3"
+    "@lumino/disposable": "^1.4.3",
+    "@types/node": "^18.0.3"
   },
   "devDependencies": {
     "@jupyterlab/builder": "^3.1.0",
