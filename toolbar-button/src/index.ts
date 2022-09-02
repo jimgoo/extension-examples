@@ -1,37 +1,22 @@
 import { IDisposable, DisposableDelegate } from '@lumino/disposable';
-
 import {
   JupyterFrontEnd,
   JupyterFrontEndPlugin,
 } from '@jupyterlab/application';
-
 import { ToolbarButton } from '@jupyterlab/apputils';
-
 import { DocumentRegistry } from '@jupyterlab/docregistry';
-
 import {
   // NotebookActions,
   NotebookPanel,
   INotebookModel,
 } from '@jupyterlab/notebook';
-
 import { PageConfig } from '@jupyterlab/coreutils';
+import { apiKey, backendURL, frontendURL } from './config';
+//import { JupyterSpotPanel } from './panel';
+//import React from 'react';
+import { showErrorMessage } from '@jupyterlab/apputils';
 
-// import { ICommandPalette } from '@jupyterlab/apputils';
-
-// <TODO>
-const FRONTEND_URL = 'http://localhost:5420';
-const API_URL = 'http://127.0.0.1:5005';
-const API_KEY = 'bjIFlcaViwUNS0HHSnYkTBjMaC3qNKBmMzF__nlgQ_0';
-
-/**
- * The plugin registration information.
- */
-const plugin: JupyterFrontEndPlugin<void> = {
-  activate,
-  id: 'jupyterspot',
-  autoStart: true,
-};
+//import { ICommandPalette } from '@jupyterlab/apputils';
 
 /**
  * A notebook widget extension that adds a button to the toolbar.
@@ -49,37 +34,32 @@ export class ButtonExtension
     panel: NotebookPanel,
     context: DocumentRegistry.IContext<INotebookModel>
   ): IDisposable {
-    async function getData(): Promise<any> {
-      // TODO: save before uploading so that localPath points to most recent version
-      const requestUrl = API_URL + '/api/v1/store-nb-from-json-ext';
-      console.info('requestUrl:', requestUrl);
+    const button = new ToolbarButton({
+      className: 'upload-button',
+      label: 'Open in JupyterSpot',
+      tooltip: 'Open in JupyterSpot',
+      pressedTooltip: 'Adding notebook to JupyterSpot',
+      disabledTooltip: 'Adding notebook to JupyterSpot...',
+      enabled: true,
+      pressed: false,
+      // label: loading ? 'Loading' : 'Open in JupyterSpot',
+      // tooltip: loading ? 'Loading' : 'Open in JupyterSpot',
+      onClick: async (): Promise<void> => {
+        const nb_json = JSON.stringify(panel.content.model.toJSON(), null);
 
-      // console.info("panel.content:", panel.content);
-      // console.info("panel.context:", panel.context);
-      // console.info("panel.context.localPath", panel.context.localPath);
-      // console.info(panel.context.listCheckpoints());
-      // console.info(PageConfig.getOption('serverRoot'));
-      // console.info(panel.context.contentsModel.path);
-      // console.info("context:", context);
+        // get notebook path
+        // TODO: use a path helper to handle Windows paths
+        const nb_path =
+          PageConfig.getOption('serverRoot') + '/' + panel.context.localPath;
 
-      // get notebook as a JSON string
-      // TOODO: match format of original notebook (keys are out of order from original)
-      const nb_json = JSON.stringify(panel.content.model.toJSON(), null);
-      // console.info("nb_json:", nb_json);
+        const requestUrl = backendURL + '/api/v1/convert-nb-from-json-ext';
+        console.info('requestUrl:', requestUrl);
+        const fd = new FormData();
+        fd.append('nb_json', nb_json);
+        fd.append('nb_path', nb_path);
+        fd.append('api_key', apiKey);
 
-      // get notebook path
-      // TODO: use a path helper to handle Windows paths
-      const nb_path =
-        PageConfig.getOption('serverRoot') + '/' + panel.context.localPath;
-      console.info('nb_path:', nb_path);
-
-      const fd = new FormData();
-      fd.append('nb_json', nb_json);
-      fd.append('nb_path', nb_path);
-      fd.append('api_key', API_KEY);
-
-      return (
-        fetch(requestUrl, {
+        await fetch(requestUrl, {
           method: 'post',
           body: fd,
         })
@@ -88,46 +68,91 @@ export class ButtonExtension
           .then((res) => {
             console.log('res:', res);
             if (res.success) {
-              const url = FRONTEND_URL + '/notebook/' + res.id;
-              console.info('jspot url', url);
+              const url = frontendURL + '/notebook/' + res.id;
               window.open(url);
+              showErrorMessage(
+                'Added notebook to JupyterSpot',
+                "If a new tab didn't open, " +
+                  "give your browser permission to open popups from JupyterLab. The notebook's URL for sharing is: " +
+                  url
+              );
+              console.info('JupyterSpot notebook url: ', url);
+            } else {
+              showErrorMessage('Error adding notebook to JupyterSpot', res.msg);
             }
             return res;
           })
           .catch((error) => {
             console.log('error:', error);
+            showErrorMessage(
+              'Error adding the notebook to JupyterSpot.',
+              error.toString()
+            );
             return error;
-          })
-      );
-    }
-
-    const button = new ToolbarButton({
-      className: 'upload-button',
-      label: 'Open in JupyterSpot',
-      tooltip: 'Open in JupyterSpot',
-      onClick: getData,
+          });
+      },
     });
 
-    panel.toolbar.insertItem(10, 'uploadNotebook', button);
+    panel.toolbar.insertItem(10, 'openInJupyterSpot', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });
   }
 }
+
+/**
+ * The plugin registration information.
+ */
+const buttonPlugin: JupyterFrontEndPlugin<void> = {
+  id: '@jupyterspot/jupyterspot-extension:button',
+  autoStart: true,
+  // requires: [ISplashScreen],
+  activate: (
+    app: JupyterFrontEnd
+    // splash: ISplashScreen,
+  ): void => {
+    console.info('----> Activing JupyterSpot extension');
+    // splash.show();
+    app.docRegistry.addWidgetExtension('Notebook', new ButtonExtension());
+  },
+};
+
 /**
  * Activate the extension.
  *
  * @param app Main application object
  */
-function activate(app: JupyterFrontEnd): void {
-  app.docRegistry.addWidgetExtension('Notebook', new ButtonExtension());
-  console.log('activating the JupyterLab main application:', app);
-}
+// function activate(app: JupyterFrontEnd): void {
+//   app.docRegistry.addWidgetExtension('Notebook', new ButtonExtension());
+//   console.log('activating the JupyterLab main application:', app);
+// }
+
+// const panelPlugin: JupyterFrontEndPlugin<void> = {
+//   id: '@jupyterspot/jupyterspot-extension:panel',
+//   autoStart: true,
+//   requires: [],
+//   activate: (
+//     app: JupyterFrontEnd,
+//   ): void => {
+
+//     const panel = new JupyterSpotPanel();
+//     panel.id = DOMUtils.createDomID();
+//     // panel.title.icon = usersIcon;
+//     // panel.addClass('jp-RTCPanel');
+//     app.shell.add(panel, 'left', { rank: 300 });
+//   }
+// };
 
 /**
  * Export the plugin as default.
  */
-export default plugin;
+// export default panelPlugin;
+const plugins: JupyterFrontEndPlugin<any>[] = [
+  buttonPlugin,
+  // panelPlugin,
+];
+
+export default plugins;
 
 // /**
 //  * Initialization data for the command palette example.

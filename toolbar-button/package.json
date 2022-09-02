@@ -1,6 +1,6 @@
 {
-  "name": "@jupyterspot/jupyterspot",
-  "version": "0.0.1",
+  "name": "@jupyterlab-examples/toolbar-button",
+  "version": "0.1.0",
   "description": "Open notebook as a whiteboard on JupyterSpot.",
   "keywords": [
     "jupyter",
@@ -13,8 +13,8 @@
   },
   "license": "BSD-3-Clause",
   "author": {
-    "name": "Jimmie Goode",
-    "email": "jgoode@jupyterspot.com"
+    "name": "Yash Singhal",
+    "email": "ramusinghal112@gmail.com"
   },
   "files": [
     "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
